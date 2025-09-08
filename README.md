@@ -53,3 +53,9 @@ python main.py pr pr_template.md
 - Follows Conventional Commits format
 - Provides multiple suggestions
 - Keeps first line under 50 characters
+
+---
+
+## License
+
+MIT License

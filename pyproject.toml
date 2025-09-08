@@ -1,10 +1,11 @@
 [project]
 name = "git-diff-analyzer"
-version = "0.1.0"
+version = "1.0.0"
 description = "git-diff-analyzer is a CLI tool that uses AI to analyze your Git repository and assist with development workflows."
 readme = "README.md"
-requires-python = ">=3.13"
+requires-python = ">=3.10"
+license = { text = "MIT" }
 dependencies = [
-    "openai>=1.106.1",
+    "openai>=1.107.0",
     "python-dotenv>=1.1.1",
 ]

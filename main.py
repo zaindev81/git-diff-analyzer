@@ -317,7 +317,6 @@ Please suggest 3 commit messages. List the most appropriate one first.
 
 def main():
     """Main function"""
-    # Get OpenAI API Key from environment variable
     api_key = os.getenv("OPENAI_API_KEY")
     if not api_key:
         print("Error: Please set the OPENAI_API_KEY environment variable.")
