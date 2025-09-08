@@ -14,8 +14,10 @@ base_dir = os.path.dirname(os.path.abspath(__file__))
 dotenv_path = os.path.join(base_dir, '.env')
 load_dotenv(dotenv_path)
 
+DEFAULT_MODEL = "gpt-4o-mini"
+
 class GitAIAssistant:
-    def __init__(self, api_key: str, model: str = "gpt-4o-mini"):
+    def __init__(self, api_key: str, model: str = DEFAULT_MODEL):
         """
         Initialize GitAIAssistant
 
