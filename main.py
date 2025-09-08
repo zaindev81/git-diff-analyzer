@@ -10,7 +10,9 @@ from typing import Optional, Tuple
 from openai import OpenAI
 from dotenv import load_dotenv
 
-load_dotenv()
+base_dir = os.path.dirname(os.path.abspath(__file__))
+dotenv_path = os.path.join(base_dir, '.env')
+load_dotenv(dotenv_path)
 
 class GitAIAssistant:
     def __init__(self, api_key: str, model: str = "gpt-4o-mini"):
@@ -271,6 +273,7 @@ Include technical details to help reviewers understand the changes.
         except Exception as e:
             return f"An error occurred: {e}"
 
+
     def suggest_commit_message(self, diff_content: str) -> str:
         """
         Suggest commit messages based on staged changes
@@ -300,7 +303,7 @@ Git diff:
 ```
 
 Please suggest 3 commit messages. List the most appropriate one first.
-"""
+    """
 
         try:
             response = self.client.chat.completions.create(
@@ -311,7 +314,12 @@ Please suggest 3 commit messages. List the most appropriate one first.
                 ],
                 max_tokens=400
             )
-            return response.choices[0].message.content.strip()
+
+            result = response.choices[0].message.content.strip()
+            result = result.replace("**", "")
+            result = result.replace("*", "")
+
+            return result
         except Exception as e:
             return f"An error occurred: {e}"
 
