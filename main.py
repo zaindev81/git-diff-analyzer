@@ -114,6 +114,40 @@ class GitAIAssistant:
         print("Debug: No diff found with any method")
         return None
 
+    def get_diff_for_branch_naming(self) -> Optional[str]:
+        """
+        Get diff for branch name suggestions
+        For main/master branches, also check staged changes
+        """
+        current_branch = self.get_current_branch()
+        if not current_branch:
+            print("Debug: Could not determine current branch")
+            return None
+
+        print(f"Debug: Getting diff for branch naming, current branch: {current_branch}")
+
+        # If on main/master, first try to get diff with main, then staged changes
+        if current_branch in ['main', 'master']:
+            print("Debug: On main/master branch, checking uncommitted changes first")
+            # Get uncommitted changes
+            stdout, stderr, code = self.run_git_command(["git", "diff"])
+            if code == 0 and stdout.strip():
+                print(f"Debug: Found uncommitted changes ({len(stdout)} characters)")
+                return stdout
+
+            # If no uncommitted changes, try staged changes
+            print("Debug: No uncommitted changes, checking staged changes")
+            staged_diff = self.get_staged_diff()
+            if staged_diff:
+                print(f"Debug: Found staged changes for branch naming ({len(staged_diff)} characters)")
+                return staged_diff
+
+            print("Debug: No uncommitted or staged changes found")
+            return None
+
+        # For other branches, use the regular diff with main
+        return self.get_diff_with_main()
+
     def get_staged_diff(self) -> Optional[str]:
         """Get diff of staged changes"""
         stdout, stderr, code = self.run_git_command(["git", "diff", "--staged"])
@@ -335,17 +369,27 @@ Usage:
         else:
             print("No diff found")
 
+        # Also try staged diff
+        staged_diff = assistant.get_staged_diff()
+        if staged_diff:
+            print(f"Staged diff found: {len(staged_diff)} characters")
+            print("First 200 characters of staged diff:")
+            print(staged_diff[:200])
+        else:
+            print("No staged diff found")
+
         return
 
     elif command == "branch":
         print("Suggesting branch names...")
-        diff = assistant.get_diff_with_main()
+        diff = assistant.get_diff_for_branch_naming()
         if not diff:
             print("No diff found. Possible reasons:")
-            print("1. You're on main/master with no uncommitted changes")
+            print("1. You're on main/master with no uncommitted or staged changes")
             print("2. No differences between current branch and main/master")
             print("3. Main/master branch doesn't exist")
-            print("\nTry running: python main.py debug")
+            print("\nTip: If you have changes to commit, try 'git add' to stage them first")
+            print("Try running: python main.py debug")
             sys.exit(1)
 
         suggestion = assistant.suggest_branch_name(diff)
