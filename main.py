@@ -208,7 +208,12 @@ Please suggest 3 branch names. List the most appropriate one first.
                 ],
                 max_tokens=300
             )
-            return response.choices[0].message.content.strip()
+            result = response.choices[0].message.content.strip()
+            result = result.replace("**", "")
+            result = result.replace("*", "")
+            result = result.replace("`", "")
+
+            return result
         except Exception as e:
             return f"An error occurred: {e}"
 
