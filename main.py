@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Debug Git AI Assistant - Enhanced version with debugging
+Git AI Assistant - Suggest branch names, generate PR summaries, and suggest commit messages using OpenAI's API.
 """
 
 import subprocess
