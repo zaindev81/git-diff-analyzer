@@ -118,10 +118,13 @@ class GitAIAssistant:
         print("Debug: No diff found with any method")
         return None
 
-    def get_diff_for_branch_naming(self) -> Optional[str]:
+    def get_diff_for_branch_naming(self, base_branch: Optional[str] = None) -> Optional[str]:
         """
         Get diff for branch name suggestions
         For main/master branches, also check staged changes
+
+        Args:
+            base_branch (str, optional): Base branch to compare against. If None, uses default behavior.
         """
         current_branch = self.get_current_branch()
         if not current_branch:
@@ -129,6 +132,11 @@ class GitAIAssistant:
             return None
 
         print(f"Debug: Getting diff for branch naming, current branch: {current_branch}")
+
+        # If a specific base branch is provided, use it
+        if base_branch:
+            print(f"Debug: Using specified base branch: {base_branch}")
+            return self.get_diff_with_branch(base_branch)
 
         # If on main/master, first try to get diff with main, then staged changes
         if current_branch in ['main', 'master']:
@@ -159,6 +167,58 @@ class GitAIAssistant:
             print(f"Debug: Found staged changes ({len(stdout)} characters)")
             return stdout
         print("Debug: No staged changes found")
+        return None
+
+    def get_diff_with_branch(self, target_branch: str) -> Optional[str]:
+        """
+        Get diff between current branch and specified target branch
+
+        Args:
+            target_branch (str): The branch to compare against
+
+        Returns:
+            Optional[str]: Git diff content or None if no diff found
+        """
+        current_branch = self.get_current_branch()
+        if not current_branch:
+            print("Debug: Could not determine current branch")
+            return None
+
+        print(f"Debug: Getting diff between {current_branch} and {target_branch}")
+
+        # If comparing with the same branch, get uncommitted changes
+        if current_branch == target_branch:
+            print(f"Debug: Same branch comparison, getting uncommitted changes")
+            stdout, stderr, code = self.run_git_command(["git", "diff"])
+            if code == 0 and stdout.strip():
+                print(f"Debug: Found uncommitted changes ({len(stdout)} characters)")
+                return stdout
+            else:
+                print("Debug: No uncommitted changes found")
+                return None
+
+        # Try direct branch comparison
+        stdout, stderr, code = self.run_git_command(["git", "diff", target_branch])
+        if code == 0:
+            if stdout.strip():
+                print(f"Debug: Found diff with {target_branch} ({len(stdout)} characters)")
+                return stdout
+            else:
+                print(f"Debug: No diff with {target_branch}")
+                return None
+        else:
+            print(f"Debug: Failed to diff with {target_branch}: {stderr}")
+
+            # Try with origin/ prefix if it failed
+            origin_branch = f"origin/{target_branch}"
+            print(f"Debug: Trying with {origin_branch}")
+            stdout, stderr, code = self.run_git_command(["git", "diff", origin_branch])
+            if code == 0 and stdout.strip():
+                print(f"Debug: Found diff with {origin_branch} ({len(stdout)} characters)")
+                return stdout
+            else:
+                print(f"Debug: Failed to diff with {origin_branch}: {stderr}")
+
         return None
 
     def get_git_status(self) -> str:
@@ -342,10 +402,12 @@ def main():
     if len(sys.argv) < 2:
         print("""
 Usage:
-  python main.py branch    - Suggest branch names
-  python main.py pr        - Generate PR summary
-  python main.py commit    - Suggest commit messages
-  python main.py debug     - Show debug information
+  python main.py branch                    - Suggest branch names (compare with main/master)
+  python main.py branch <base-branch>      - Suggest branch names (compare with base branch)
+  python main.py pr                        - Generate PR summary
+  python main.py commit                    - Suggest commit messages (staged changes)
+  python main.py commit <branch-name>      - Suggest commit messages (compare with branch)
+  python main.py debug                     - Show debug information
         """)
         sys.exit(1)
 
@@ -396,13 +458,27 @@ Usage:
 
     elif command == "branch":
         print("Suggesting branch names...")
-        diff = assistant.get_diff_for_branch_naming()
+
+        # Check if a base branch is specified
+        base_branch = None
+        if len(sys.argv) > 2:
+            base_branch = sys.argv[2]
+            print(f"Comparing with base branch: {base_branch}")
+
+        diff = assistant.get_diff_for_branch_naming(base_branch)
         if not diff:
-            print("No diff found. Possible reasons:")
-            print("1. You're on main/master with no uncommitted or staged changes")
-            print("2. No differences between current branch and main/master")
-            print("3. Main/master branch doesn't exist")
-            print("\nTip: If you have changes to commit, try 'git add' to stage them first")
+            if base_branch:
+                print(f"No diff found with base branch '{base_branch}'. Possible reasons:")
+                print(f"1. No differences between current branch and {base_branch}")
+                print(f"2. Branch '{base_branch}' doesn't exist")
+                print("3. You're comparing the same branch")
+            else:
+                print("No diff found. Possible reasons:")
+                print("1. You're on main/master with no uncommitted or staged changes")
+                print("2. No differences between current branch and main/master")
+                print("3. Main/master branch doesn't exist")
+                print("\nTip: If you have changes to commit, try 'git add' to stage them first")
+                print("Or specify a base branch: python main.py branch <base-branch>")
             print("Try running: python main.py debug")
             sys.exit(1)
 
